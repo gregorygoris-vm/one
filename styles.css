@@ -60,6 +60,27 @@ input[type="file"] {
   font-size: 1rem;
 }
 
+.hint {
+  margin-bottom: 16px;
+  background: #eef2ff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #1e1b4b;
+}
+
+.hint p {
+  margin: 0 0 8px;
+}
+
+.hint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.95rem;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -75,6 +96,11 @@ button {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+button.secondary {
+  background: #e2e8f0;
+  color: #1e293b;
 }
 
 button:disabled {
