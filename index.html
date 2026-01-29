@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Slim croppen & resizen</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Slim croppen & resizen</h1>
+      <p>
+        Upload een afbeelding, kies doelafmetingen en laat de tool automatisch het
+        meest interessante deel uitsnijden.
+      </p>
+    </header>
+
+    <section class="panel">
+      <div class="field">
+        <label for="imageInput">Afbeelding</label>
+        <input id="imageInput" type="file" accept="image/*" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="widthInput">Breedte (px)</label>
+          <input id="widthInput" type="number" min="1" value="1200" />
+        </div>
+        <div class="field">
+          <label for="heightInput">Hoogte (px)</label>
+          <input id="heightInput" type="number" min="1" value="630" />
+        </div>
+        <div class="field">
+          <label for="formatSelect">Bestandsformaat</label>
+          <select id="formatSelect">
+            <option value="image/jpeg">JPG</option>
+            <option value="image/png">PNG</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="maxSizeInput">Max grootte (KB)</label>
+          <input id="maxSizeInput" type="number" min="0" value="500" />
+        </div>
+      </div>
+      <div class="hint">
+        <p>
+          Tip: klik en sleep op de originele afbeelding om een belangrijk gebied te
+          markeren (bijv. logo of gezicht). Alle gemarkeerde gebieden blijven volledig
+          zichtbaar in de crop.
+        </p>
+        <div class="hint-actions">
+          <span id="focusCount">Geen focusgebieden geselecteerd</span>
+          <button id="clearFocus" type="button" class="secondary" disabled>
+            Focusgebieden wissen
+          </button>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="processButton" type="button" disabled>Crop & resize</button>
+        <button id="downloadButton" type="button" disabled>Download</button>
+      </div>
+      <div id="status" class="status" aria-live="polite"></div>
+    </section>
+
+    <section class="preview-grid">
+      <div class="preview-card">
+        <h2>Origineel</h2>
+        <canvas id="sourceCanvas" width="480" height="300"></canvas>
+      </div>
+      <div class="preview-card">
+        <h2>Resultaat</h2>
+        <canvas id="resultCanvas" width="480" height="300"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
