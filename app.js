@@ -1,184 +1,534 @@
-const leadTable = document.getElementById("leadTable");
-const leadSearch = document.getElementById("leadSearch");
-const leadStatus = document.getElementById("leadStatus");
-const leadForm = document.getElementById("leadForm");
-const contractList = document.getElementById("contractList");
-const taskList = document.getElementById("taskList");
+const imageInput = document.getElementById("imageInput");
+const widthInput = document.getElementById("widthInput");
+const heightInput = document.getElementById("heightInput");
+const formatSelect = document.getElementById("formatSelect");
+const maxSizeInput = document.getElementById("maxSizeInput");
+const processButton = document.getElementById("processButton");
+const downloadButton = document.getElementById("downloadButton");
+const statusEl = document.getElementById("status");
+const sourceCanvas = document.getElementById("sourceCanvas");
+const resultCanvas = document.getElementById("resultCanvas");
+const focusCount = document.getElementById("focusCount");
+const clearFocus = document.getElementById("clearFocus");
 
-const leads = [
-  {
-    name: "Noordzee Logistics",
-    vehicle: "Volkswagen ID.4",
-    duration: "48 maanden",
-    status: "Nieuw",
-    nextAction: "Belafspraak plannen",
-  },
-  {
-    name: "Stadshaven Events",
-    vehicle: "Mercedes eSprinter",
-    duration: "60 maanden",
-    status: "Demo",
-    nextAction: "Demo evalueren",
-  },
-  {
-    name: "GreenBuild BV",
-    vehicle: "Toyota Proace EV",
-    duration: "36 maanden",
-    status: "Onderhandeling",
-    nextAction: "Voorstel finetunen",
-  },
-  {
-    name: "Horizon Hotels",
-    vehicle: "BMW i4",
-    duration: "48 maanden",
-    status: "Contract klaar",
-    nextAction: "Contract laten tekenen",
-  },
-];
+const sourceCtx = sourceCanvas.getContext("2d");
+const resultCtx = resultCanvas.getContext("2d");
 
-const contracts = [
-  {
-    client: "Aurora Pharma",
-    vehicle: "Polestar 2",
-    start: "01-06-2024",
-    end: "01-06-2028",
-    monthly: "€ 1.240",
-    status: "Actief",
+const state = {
+  image: null,
+  resultBlob: null,
+  preview: {
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
   },
-  {
-    client: "CityCourier",
-    vehicle: "Renault Kangoo E-Tech",
-    start: "15-03-2023",
-    end: "15-03-2027",
-    monthly: "€ 780",
-    status: "Actief",
-  },
-  {
-    client: "Delta IT",
-    vehicle: "Audi Q4 e-tron",
-    start: "01-11-2022",
-    end: "01-11-2026",
-    monthly: "€ 1.090",
-    status: "Herziening",
-  },
-];
+  focusAreas: [],
+  isDragging: false,
+  dragStart: null,
+  dragCurrent: null,
+};
 
-const tasks = [
-  {
-    title: "Factuurherinnering naar Delta IT",
-    owner: "Finance",
-    deadline: "Vandaag 16:00",
-  },
-  {
-    title: "Leveringsdatum bevestigen voor Horizon Hotels",
-    owner: "Operations",
-    deadline: "Morgen 09:00",
-  },
-  {
-    title: "Nieuwe offerte voor GreenBuild BV",
-    owner: "Sales",
-    deadline: "Vandaag 14:00",
-  },
-];
+const setStatus = (text) => {
+  statusEl.textContent = text;
+};
 
-const badgeClass = (status) => {
-  switch (status) {
-    case "Nieuw":
-      return "nieuw";
-    case "Demo":
-      return "demo";
-    case "Onderhandeling":
-      return "onderhandeling";
-    case "Contract klaar":
-      return "klaar";
-    default:
-      return "nieuw";
+const updateFocusUI = () => {
+  if (state.focusAreas.length === 0) {
+    focusCount.textContent = "Geen focusgebieden geselecteerd";
+    clearFocus.disabled = true;
+    return;
   }
+  focusCount.textContent = `Focusgebieden: ${state.focusAreas.length}`;
+  clearFocus.disabled = false;
 };
 
-const renderLeads = () => {
-  const query = leadSearch.value.toLowerCase();
-  const statusFilter = leadStatus.value;
-  leadTable.innerHTML = "";
-
-  leads
-    .filter((lead) => {
-      const matchesQuery =
-        lead.name.toLowerCase().includes(query) ||
-        lead.vehicle.toLowerCase().includes(query);
-      const matchesStatus = statusFilter ? lead.status === statusFilter : true;
-      return matchesQuery && matchesStatus;
-    })
-    .forEach((lead) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${lead.name}</td>
-        <td>${lead.vehicle}</td>
-        <td>${lead.duration}</td>
-        <td><span class="badge ${badgeClass(lead.status)}">${lead.status}</span></td>
-        <td>${lead.nextAction}</td>
-      `;
-      leadTable.appendChild(row);
-    });
-};
-
-const renderContracts = () => {
-  contractList.innerHTML = "";
-  contracts.forEach((contract) => {
-    const card = document.createElement("article");
-    card.className = "contract";
-    card.innerHTML = `
-      <header>
-        <strong>${contract.client}</strong>
-        <span>${contract.status}</span>
-      </header>
-      <span>Voertuig: ${contract.vehicle}</span>
-      <span>Looptijd: ${contract.start} → ${contract.end}</span>
-      <span>Maandtermijn: ${contract.monthly}</span>
-    `;
-    contractList.appendChild(card);
+const loadImageFromFile = (file) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Kon de afbeelding niet laden."));
+    };
+    img.src = url;
   });
 };
 
-const renderTasks = () => {
-  taskList.innerHTML = "";
-  tasks.forEach((task) => {
-    const item = document.createElement("li");
-    item.className = "task";
-    item.innerHTML = `
-      <strong>${task.title}<span>${task.deadline}</span></strong>
-      <span>Team: ${task.owner}</span>
-    `;
-    taskList.appendChild(item);
+const drawFocusOverlays = () => {
+  sourceCtx.save();
+  sourceCtx.lineWidth = 2;
+  sourceCtx.setLineDash([6, 4]);
+  sourceCtx.strokeStyle = "#f97316";
+  sourceCtx.fillStyle = "rgba(249, 115, 22, 0.12)";
+  const { scale, offsetX, offsetY } = state.preview;
+
+  state.focusAreas.forEach((area) => {
+    sourceCtx.fillRect(
+      offsetX + area.x * scale,
+      offsetY + area.y * scale,
+      area.width * scale,
+      area.height * scale,
+    );
+    sourceCtx.strokeRect(
+      offsetX + area.x * scale,
+      offsetY + area.y * scale,
+      area.width * scale,
+      area.height * scale,
+    );
   });
+
+  if (state.dragStart && state.dragCurrent) {
+    const x = Math.min(state.dragStart.x, state.dragCurrent.x);
+    const y = Math.min(state.dragStart.y, state.dragCurrent.y);
+    const width = Math.abs(state.dragStart.x - state.dragCurrent.x);
+    const height = Math.abs(state.dragStart.y - state.dragCurrent.y);
+    sourceCtx.fillRect(x, y, width, height);
+    sourceCtx.strokeRect(x, y, width, height);
+  }
+
+  sourceCtx.restore();
 };
 
-leadSearch.addEventListener("input", renderLeads);
-leadStatus.addEventListener("change", renderLeads);
+const drawPreview = (img) => {
+  const scale = Math.min(
+    sourceCanvas.width / img.width,
+    sourceCanvas.height / img.height,
+  );
+  const width = img.width * scale;
+  const height = img.height * scale;
+  const offsetX = (sourceCanvas.width - width) / 2;
+  const offsetY = (sourceCanvas.height - height) / 2;
+  state.preview = { scale, offsetX, offsetY };
+  sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+  sourceCtx.fillStyle = "#f8fafc";
+  sourceCtx.fillRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+  sourceCtx.drawImage(img, offsetX, offsetY, width, height);
+  drawFocusOverlays();
+};
 
-leadForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const name = document.getElementById("leadName").value.trim();
-  const vehicle = document.getElementById("leadVehicle").value.trim();
-  const start = document.getElementById("leadStart").value;
-  const stage = document.getElementById("leadStage").value;
+const buildSaliencyMap = (img, maxSize = 200) => {
+  const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, width, height);
+  const { data } = ctx.getImageData(0, 0, width, height);
 
-  if (!name || !vehicle || !start) {
+  const luminance = new Float32Array(width * height);
+  for (let i = 0; i < width * height; i += 1) {
+    const offset = i * 4;
+    const r = data[offset];
+    const g = data[offset + 1];
+    const b = data[offset + 2];
+    luminance[i] = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  const saliency = new Float32Array(width * height);
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const idx = y * width + x;
+      const gx = luminance[idx + 1] - luminance[idx - 1];
+      const gy = luminance[idx + width] - luminance[idx - width];
+      saliency[idx] = Math.hypot(gx, gy);
+    }
+  }
+
+  return { saliency, width, height, scale };
+};
+
+const buildIntegralImage = (data, width, height) => {
+  const integral = new Float32Array((width + 1) * (height + 1));
+  for (let y = 1; y <= height; y += 1) {
+    let rowSum = 0;
+    for (let x = 1; x <= width; x += 1) {
+      const value = data[(y - 1) * width + (x - 1)];
+      rowSum += value;
+      const idx = y * (width + 1) + x;
+      integral[idx] = integral[idx - (width + 1)] + rowSum;
+    }
+  }
+  return integral;
+};
+
+const sumRegion = (integral, width, x, y, w, h) => {
+  const stride = width + 1;
+  const x1 = x;
+  const y1 = y;
+  const x2 = x + w;
+  const y2 = y + h;
+  return (
+    integral[y2 * stride + x2] -
+    integral[y1 * stride + x2] -
+    integral[y2 * stride + x1] +
+    integral[y1 * stride + x1]
+  );
+};
+
+const encodeCanvas = (canvas, mimeType, quality) => {
+  return new Promise((resolve) => canvas.toBlob(resolve, mimeType, quality));
+};
+
+const encodeWithMaxSize = async (canvas, mimeType, maxSizeBytes) => {
+  if (!maxSizeBytes || maxSizeBytes <= 0) {
+    return encodeCanvas(canvas, mimeType, mimeType === "image/jpeg" ? 0.92 : 0.92);
+  }
+
+  if (mimeType === "image/jpeg") {
+    for (let quality = 0.92; quality >= 0.4; quality -= 0.05) {
+      const blob = await encodeCanvas(canvas, mimeType, quality);
+      if (blob && blob.size <= maxSizeBytes) {
+        return blob;
+      }
+    }
+    return encodeCanvas(canvas, mimeType, 0.4);
+  }
+
+  const pngBlob = await encodeCanvas(canvas, mimeType, 0.92);
+  if (pngBlob && pngBlob.size <= maxSizeBytes) {
+    return pngBlob;
+  }
+  return pngBlob;
+};
+
+const computeRequiredBox = () => {
+  if (state.focusAreas.length === 0) {
+    return null;
+  }
+  const bounds = state.focusAreas.reduce(
+    (acc, area) => ({
+      minX: Math.min(acc.minX, area.x),
+      minY: Math.min(acc.minY, area.y),
+      maxX: Math.max(acc.maxX, area.x + area.width),
+      maxY: Math.max(acc.maxY, area.y + area.height),
+    }),
+    {
+      minX: Infinity,
+      minY: Infinity,
+      maxX: -Infinity,
+      maxY: -Infinity,
+    },
+  );
+
+  return {
+    x: Math.max(0, bounds.minX),
+    y: Math.max(0, bounds.minY),
+    width: Math.max(1, bounds.maxX - bounds.minX),
+    height: Math.max(1, bounds.maxY - bounds.minY),
+  };
+};
+
+const adjustCropToIncludeRequired = (img, cropWidth, cropHeight, requiredBox) => {
+  if (!requiredBox) {
+    return { cropWidth, cropHeight };
+  }
+
+  let adjustedWidth = Math.max(cropWidth, requiredBox.width);
+  let adjustedHeight = Math.max(cropHeight, requiredBox.height);
+  const targetRatio = cropWidth / cropHeight;
+  const currentRatio = adjustedWidth / adjustedHeight;
+
+  if (currentRatio > targetRatio) {
+    adjustedHeight = Math.round(adjustedWidth / targetRatio);
+  } else {
+    adjustedWidth = Math.round(adjustedHeight * targetRatio);
+  }
+
+  adjustedWidth = Math.min(adjustedWidth, img.width);
+  adjustedHeight = Math.min(adjustedHeight, img.height);
+
+  return { cropWidth: adjustedWidth, cropHeight: adjustedHeight };
+};
+
+const findBestCrop = (img, targetWidth, targetHeight) => {
+  const targetRatio = targetWidth / targetHeight;
+  const imgRatio = img.width / img.height;
+
+  let cropWidth = img.width;
+  let cropHeight = img.height;
+
+  if (imgRatio > targetRatio) {
+    cropWidth = Math.round(img.height * targetRatio);
+  } else {
+    cropHeight = Math.round(img.width / targetRatio);
+  }
+
+  const requiredBox = computeRequiredBox();
+  ({ cropWidth, cropHeight } = adjustCropToIncludeRequired(
+    img,
+    cropWidth,
+    cropHeight,
+    requiredBox,
+  ));
+
+  const { saliency, width, height, scale } = buildSaliencyMap(img);
+  const integral = buildIntegralImage(saliency, width, height);
+
+  const cropWidthScaled = Math.max(1, Math.round(cropWidth * scale));
+  const cropHeightScaled = Math.max(1, Math.round(cropHeight * scale));
+
+  const stepX = Math.max(1, Math.round(cropWidthScaled * 0.06));
+  const stepY = Math.max(1, Math.round(cropHeightScaled * 0.06));
+
+  let best = {
+    score: -Infinity,
+    x: 0,
+    y: 0,
+  };
+
+  const requiredScaled = requiredBox
+    ? {
+        x: Math.round(requiredBox.x * scale),
+        y: Math.round(requiredBox.y * scale),
+        width: Math.round(requiredBox.width * scale),
+        height: Math.round(requiredBox.height * scale),
+      }
+    : null;
+
+  const minX = 0;
+  const minY = 0;
+  const maxX = width - cropWidthScaled;
+  const maxY = height - cropHeightScaled;
+
+  for (let y = minY; y <= maxY; y += stepY) {
+    for (let x = minX; x <= maxX; x += stepX) {
+      if (requiredScaled) {
+        const withinX =
+          x <= requiredScaled.x &&
+          x + cropWidthScaled >= requiredScaled.x + requiredScaled.width;
+        const withinY =
+          y <= requiredScaled.y &&
+          y + cropHeightScaled >= requiredScaled.y + requiredScaled.height;
+        if (!withinX || !withinY) {
+          continue;
+        }
+      }
+      const score = sumRegion(
+        integral,
+        width,
+        x,
+        y,
+        cropWidthScaled,
+        cropHeightScaled,
+      );
+      if (score > best.score) {
+        best = { score, x, y };
+      }
+    }
+  }
+
+  if (best.score === -Infinity) {
+    best = {
+      score: 0,
+      x: Math.max(0, Math.min(maxX, requiredScaled?.x ?? 0)),
+      y: Math.max(0, Math.min(maxY, requiredScaled?.y ?? 0)),
+    };
+  }
+
+  return {
+    x: Math.round(best.x / scale),
+    y: Math.round(best.y / scale),
+    width: cropWidth,
+    height: cropHeight,
+  };
+};
+
+const cropAndResize = async () => {
+  if (!state.image) {
+    return;
+  }
+  const targetWidth = Number(widthInput.value);
+  const targetHeight = Number(heightInput.value);
+  if (!targetWidth || !targetHeight) {
+    setStatus("Vul geldige doelafmetingen in.");
     return;
   }
 
-  leads.unshift({
-    name,
-    vehicle,
-    duration: "Nog te bepalen",
-    status: stage,
-    nextAction: `Startdatum: ${start}`,
-  });
+  setStatus("Analyseren van de inhoud...");
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
-  leadForm.reset();
-  renderLeads();
+  const crop = findBestCrop(state.image, targetWidth, targetHeight);
+  const mimeType = formatSelect.value;
+  const maxSizeKb = Number(maxSizeInput.value);
+  const maxSizeBytes = maxSizeKb > 0 ? maxSizeKb * 1024 : 0;
+
+  const offscreen = document.createElement("canvas");
+  offscreen.width = targetWidth;
+  offscreen.height = targetHeight;
+  const offCtx = offscreen.getContext("2d");
+
+  offCtx.drawImage(
+    state.image,
+    crop.x,
+    crop.y,
+    crop.width,
+    crop.height,
+    0,
+    0,
+    targetWidth,
+    targetHeight,
+  );
+
+  resultCanvas.width = targetWidth;
+  resultCanvas.height = targetHeight;
+  resultCtx.drawImage(offscreen, 0, 0, targetWidth, targetHeight);
+
+  state.resultBlob = await encodeWithMaxSize(offscreen, mimeType, maxSizeBytes);
+
+  downloadButton.disabled = !state.resultBlob;
+  if (state.resultBlob && maxSizeBytes > 0 && state.resultBlob.size > maxSizeBytes) {
+    setStatus(
+      "Resultaat is groter dan de limiet. Kies JPG of verhoog de KB-limiet.",
+    );
+  } else {
+    setStatus("Klaar! Je kunt het resultaat downloaden.");
+  }
+};
+
+const getCanvasPosition = (event) => {
+  const rect = sourceCanvas.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+  };
+};
+
+const canvasToImageCoords = (position) => {
+  const { scale, offsetX, offsetY } = state.preview;
+  const x = (position.x - offsetX) / scale;
+  const y = (position.y - offsetY) / scale;
+  return {
+    x: Math.max(0, Math.min(state.image.width, x)),
+    y: Math.max(0, Math.min(state.image.height, y)),
+  };
+};
+
+const handleCanvasPointerDown = (event) => {
+  if (!state.image) {
+    return;
+  }
+  state.isDragging = true;
+  state.dragStart = getCanvasPosition(event);
+  state.dragCurrent = state.dragStart;
+  drawPreview(state.image);
+};
+
+const handleCanvasPointerMove = (event) => {
+  if (!state.isDragging || !state.image) {
+    return;
+  }
+  state.dragCurrent = getCanvasPosition(event);
+  drawPreview(state.image);
+};
+
+const handleCanvasPointerUp = () => {
+  if (!state.isDragging || !state.image || !state.dragStart || !state.dragCurrent) {
+    state.isDragging = false;
+    return;
+  }
+
+  const start = canvasToImageCoords(state.dragStart);
+  const end = canvasToImageCoords(state.dragCurrent);
+
+  const x = Math.min(start.x, end.x);
+  const y = Math.min(start.y, end.y);
+  const width = Math.abs(start.x - end.x);
+  const height = Math.abs(start.y - end.y);
+
+  if (width > 8 && height > 8) {
+    state.focusAreas.push({ x, y, width, height });
+    updateFocusUI();
+  }
+
+  state.isDragging = false;
+  state.dragStart = null;
+  state.dragCurrent = null;
+  drawPreview(state.image);
+};
+
+const detectFaces = async (img) => {
+  if (!("FaceDetector" in window)) {
+    return [];
+  }
+  try {
+    const detector = new FaceDetector({ fastMode: true });
+    const faces = await detector.detect(img);
+    return faces.map((face) => ({
+      x: face.boundingBox.x,
+      y: face.boundingBox.y,
+      width: face.boundingBox.width,
+      height: face.boundingBox.height,
+    }));
+  } catch (error) {
+    return [];
+  }
+};
+
+imageInput.addEventListener("change", async (event) => {
+  const [file] = event.target.files || [];
+  if (!file) {
+    return;
+  }
+  try {
+    setStatus("Afbeelding laden...");
+    const img = await loadImageFromFile(file);
+    state.image = img;
+    state.resultBlob = null;
+    state.focusAreas = [];
+    processButton.disabled = false;
+    downloadButton.disabled = true;
+    drawPreview(img);
+    resultCtx.clearRect(0, 0, resultCanvas.width, resultCanvas.height);
+    updateFocusUI();
+
+    const faces = await detectFaces(img);
+    if (faces.length > 0) {
+      state.focusAreas = [...state.focusAreas, ...faces];
+      updateFocusUI();
+      drawPreview(img);
+      setStatus("Gezichten gedetecteerd. Controleer of alles goed staat.");
+    } else {
+      setStatus("Afbeelding geladen. Kies afmetingen en klik op Crop & resize.");
+    }
+  } catch (error) {
+    setStatus(error.message);
+  }
 });
 
-renderLeads();
-renderContracts();
-renderTasks();
+processButton.addEventListener("click", () => {
+  cropAndResize();
+});
+
+downloadButton.addEventListener("click", () => {
+  if (!state.resultBlob) {
+    return;
+  }
+  const url = URL.createObjectURL(state.resultBlob);
+  const link = document.createElement("a");
+  link.href = url;
+  const extension = formatSelect.value === "image/png" ? "png" : "jpg";
+  link.download = `smart-crop-${widthInput.value}x${heightInput.value}.${extension}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+});
+
+clearFocus.addEventListener("click", () => {
+  state.focusAreas = [];
+  updateFocusUI();
+  if (state.image) {
+    drawPreview(state.image);
+  }
+});
+
+sourceCanvas.addEventListener("pointerdown", handleCanvasPointerDown);
+sourceCanvas.addEventListener("pointermove", handleCanvasPointerMove);
+sourceCanvas.addEventListener("pointerup", handleCanvasPointerUp);
+sourceCanvas.addEventListener("pointerleave", handleCanvasPointerUp);
