@@ -3,65 +3,148 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Slim croppen & resizen</title>
+  <title>LeaseFlow CRM</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="container">
-    <header>
-      <h1>Slim croppen & resizen</h1>
-      <p>
-        Upload een afbeelding, kies doelafmetingen en laat de tool automatisch het
-        meest interessante deel uitsnijden.
-      </p>
-    </header>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="logo">LF</span>
+        <div>
+          <strong>LeaseFlow</strong>
+          <small>CRM voor leasing</small>
+        </div>
+      </div>
+      <nav>
+        <a class="active" href="#dashboard">Dashboard</a>
+        <a href="#klanten">Klanten</a>
+        <a href="#contracten">Contracten</a>
+        <a href="#opvolging">Opvolging</a>
+        <a href="#rapporten">Rapporten</a>
+      </nav>
+      <div class="sidebar-footer">
+        <p>Accountmanager</p>
+        <strong>Sofia de Vries</strong>
+      </div>
+    </aside>
 
-    <section class="panel">
-      <div class="field">
-        <label for="imageInput">Afbeelding</label>
-        <input id="imageInput" type="file" accept="image/*" />
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label for="widthInput">Breedte (px)</label>
-          <input id="widthInput" type="number" min="1" value="1200" />
+    <main>
+      <header class="topbar">
+        <div>
+          <h1>Een simpel CRM-systeem</h1>
+          <p>Specifiek voor leasingbedrijven met focus op contracten, voertuigen en opvolging.</p>
         </div>
-        <div class="field">
-          <label for="heightInput">Hoogte (px)</label>
-          <input id="heightInput" type="number" min="1" value="630" />
+        <div class="top-actions">
+          <button class="ghost">Importeer leads</button>
+          <button>Nieuw contract</button>
         </div>
-      </div>
-      <div class="hint">
-        <p>
-          Tip: klik en sleep op de originele afbeelding om een belangrijk gebied te
-          markeren (bijv. logo of gezicht). Alle gemarkeerde gebieden blijven volledig
-          zichtbaar in de crop.
-        </p>
-        <div class="hint-actions">
-          <span id="focusCount">Geen focusgebieden geselecteerd</span>
-          <button id="clearFocus" type="button" class="secondary" disabled>
-            Focusgebieden wissen
-          </button>
-        </div>
-      </div>
-      <div class="actions">
-        <button id="processButton" type="button" disabled>Crop & resize</button>
-        <button id="downloadButton" type="button" disabled>Download</button>
-      </div>
-      <div id="status" class="status" aria-live="polite"></div>
-    </section>
+      </header>
 
-    <section class="preview-grid">
-      <div class="preview-card">
-        <h2>Origineel</h2>
-        <canvas id="sourceCanvas" width="480" height="300"></canvas>
-      </div>
-      <div class="preview-card">
-        <h2>Resultaat</h2>
-        <canvas id="resultCanvas" width="480" height="300"></canvas>
-      </div>
-    </section>
-  </main>
+      <section class="metrics" id="dashboard">
+        <article>
+          <h3>Actieve contracten</h3>
+          <p class="metric">128</p>
+          <span class="trend positive">+6 deze maand</span>
+        </article>
+        <article>
+          <h3>Beschikbare voertuigen</h3>
+          <p class="metric">42</p>
+          <span class="trend neutral">3 in voorbereiding</span>
+        </article>
+        <article>
+          <h3>Openstaande facturen</h3>
+          <p class="metric">€ 86.450</p>
+          <span class="trend negative">12 herinneringen</span>
+        </article>
+        <article>
+          <h3>Nieuwe leads</h3>
+          <p class="metric">19</p>
+          <span class="trend positive">+4 deze week</span>
+        </article>
+      </section>
+
+      <section class="grid">
+        <div class="card" id="klanten">
+          <div class="card-header">
+            <h2>Leadpijplijn</h2>
+            <div class="filters">
+              <input id="leadSearch" type="search" placeholder="Zoek op klant of voertuig" />
+              <select id="leadStatus">
+                <option value="">Alle statussen</option>
+                <option value="Nieuw">Nieuw</option>
+                <option value="Demo">Demo</option>
+                <option value="Onderhandeling">Onderhandeling</option>
+                <option value="Contract klaar">Contract klaar</option>
+              </select>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Klant</th>
+                <th>Voertuig</th>
+                <th>Looptijd</th>
+                <th>Status</th>
+                <th>Volgende actie</th>
+              </tr>
+            </thead>
+            <tbody id="leadTable"></tbody>
+          </table>
+        </div>
+
+        <div class="card" id="opvolging">
+          <div class="card-header">
+            <h2>Nieuwe lead toevoegen</h2>
+            <span class="subtitle">Maak snel een nieuw dossier aan.</span>
+          </div>
+          <form id="leadForm" class="form">
+            <label>
+              Bedrijf / klant
+              <input id="leadName" type="text" placeholder="Bijv. Noordzee Logistics" required />
+            </label>
+            <label>
+              Voorkeursvoertuig
+              <input id="leadVehicle" type="text" placeholder="Bijv. Volkswagen ID.4" required />
+            </label>
+            <label>
+              Verwachte start
+              <input id="leadStart" type="date" required />
+            </label>
+            <label>
+              Status
+              <select id="leadStage">
+                <option value="Nieuw">Nieuw</option>
+                <option value="Demo">Demo</option>
+                <option value="Onderhandeling">Onderhandeling</option>
+                <option value="Contract klaar">Contract klaar</option>
+              </select>
+            </label>
+            <button type="submit">Lead opslaan</button>
+            <p class="form-hint">Leads worden automatisch toegewezen aan de juiste accountmanager.</p>
+          </form>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card" id="contracten">
+          <div class="card-header">
+            <h2>Contractbeheer</h2>
+            <span class="subtitle">Overzicht van lopende leasecontracten.</span>
+          </div>
+          <div class="contracts" id="contractList"></div>
+        </div>
+
+        <div class="card" id="rapporten">
+          <div class="card-header">
+            <h2>Opvolging vandaag</h2>
+            <span class="subtitle">Prioriteiten voor het team.</span>
+          </div>
+          <ul class="tasks" id="taskList"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script src="app.js"></script>
 </body>
