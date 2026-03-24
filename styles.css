@@ -1,8 +1,8 @@
 :root {
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: light;
-  background: #f3f4ff;
-  color: #101426;
+  background: #f4f6fb;
+  color: #111827;
 }
 
 * {
@@ -12,11 +12,11 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at 20% 20%, #e7e9ff, #f7f8ff 55%, #ffffff);
+  background: radial-gradient(circle at 15% 15%, #eef2ff, #f9fbff 55%, #ffffff);
 }
 
 .app-shell {
-  width: min(900px, 100%);
+  width: min(980px, 100%);
   margin: 0 auto;
   padding: 28px 18px 40px;
   display: grid;
@@ -33,14 +33,14 @@ body {
   font-size: 0.82rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #4f46e5;
+  color: #4338ca;
   font-weight: 700;
 }
 
 .subtitle {
   margin: 10px 0 0;
   max-width: 66ch;
-  color: #3a405a;
+  color: #374151;
   line-height: 1.5;
 }
 
@@ -48,7 +48,7 @@ body {
   background: #fff;
   border-radius: 16px;
   padding: 18px;
-  box-shadow: 0 10px 30px rgba(38, 39, 89, 0.08);
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
 }
 
 .card h2 {
@@ -58,110 +58,59 @@ body {
 
 .muted {
   margin: 0 0 14px;
-  color: #556080;
+  color: #4b5563;
 }
 
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-weight: 600;
-}
-
-input {
-  width: 100px;
-  padding: 10px 12px;
-  border: 1px solid #d7ddff;
-  border-radius: 10px;
-  font-size: 1rem;
-}
-
-.buttons {
-  margin-top: 14px;
-}
-
-button {
-  border: none;
-  border-radius: 999px;
-  padding: 11px 15px;
-  font-weight: 600;
-  background: #4f46e5;
-  color: #fff;
-  cursor: pointer;
-}
-
-button.secondary {
-  background: #e7ebff;
-  color: #2a2d55;
-}
-
-button:hover {
-  filter: brightness(0.98);
-}
-
-.status {
-  margin: 12px 0 0;
-  min-height: 20px;
-  font-weight: 600;
-  color: #3740a2;
-}
-
-.schedule-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-}
-
-.label {
-  margin: 0;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #647097;
-}
-
-.value {
-  margin: 4px 0 0;
-  font-weight: 700;
-  font-size: 1.08rem;
-}
-
-.pair-grid {
+.car-list,
+.slot-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
 
-.user {
-  border: 1px solid #e2e6ff;
+.car-card,
+.slot-card {
+  border: 1px solid #e5e7eb;
   border-radius: 14px;
-  padding: 12px;
   background: #fcfcff;
+  text-align: left;
+  padding: 14px;
+  cursor: pointer;
 }
 
-.user h3 {
-  margin: 0 0 4px;
+.car-card h3 {
+  margin: 0 0 8px;
 }
 
-.user p {
+.car-card p {
   margin: 0;
-  color: #4e5572;
+  color: #4b5563;
 }
 
-.avatar {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #9aa3ff, #6f78f8);
-  color: #fff;
+.car-card .availability {
+  margin-top: 8px;
   font-weight: 700;
+  color: #1d4ed8;
+}
+
+.car-card.active {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.slot-card {
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.slot-card:hover,
+.car-card:hover {
+  filter: brightness(0.98);
+}
+
+.status {
+  margin: 4px 0 0;
+  min-height: 24px;
+  font-weight: 700;
+  color: #1f2937;
 }
