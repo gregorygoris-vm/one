@@ -1,122 +1,142 @@
-const startHourInput = document.getElementById("startHour");
-const endHourInput = document.getElementById("endHour");
-const generateTimeBtn = document.getElementById("generateTimeBtn");
-const pairUsersBtn = document.getElementById("pairUsersBtn");
-const statusText = document.getElementById("statusText");
+const carListEl = document.getElementById("carList");
+const slotListEl = document.getElementById("slotList");
+const selectedCarTextEl = document.getElementById("selectedCarText");
+const bookingStatusEl = document.getElementById("bookingStatus");
 
-const promptDateEl = document.getElementById("promptDate");
-const promptTimeEl = document.getElementById("promptTime");
-const promptWindowEl = document.getElementById("promptWindow");
-const userAEl = document.getElementById("userA");
-const userBEl = document.getElementById("userB");
-
-const users = [
-  { name: "Mia", city: "Amsterdam", streak: 11 },
-  { name: "Noah", city: "Rotterdam", streak: 5 },
-  { name: "Luca", city: "Utrecht", streak: 17 },
-  { name: "Sara", city: "Eindhoven", streak: 8 },
-  { name: "Yara", city: "Haarlem", streak: 22 },
-  { name: "Daan", city: "Groningen", streak: 3 },
-  { name: "Iris", city: "Maastricht", streak: 14 },
-  { name: "Finn", city: "Leiden", streak: 9 },
+const cars = [
+  {
+    id: "tesla-model-y",
+    naam: "Tesla Model Y",
+    type: "Elektrisch SUV",
+    transmissie: "Automaat",
+    slots: ["09:00", "10:30", "14:00", "16:30"],
+  },
+  {
+    id: "volvo-xc40",
+    naam: "Volvo XC40",
+    type: "Hybride SUV",
+    transmissie: "Automaat",
+    slots: ["11:00", "13:30", "15:00"],
+  },
+  {
+    id: "bmw-320i",
+    naam: "BMW 320i",
+    type: "Benzine Sedan",
+    transmissie: "Automaat",
+    slots: ["10:00", "12:30", "17:00"],
+  },
+  {
+    id: "vw-id-buzz",
+    naam: "Volkswagen ID. Buzz",
+    type: "Elektrische MPV",
+    transmissie: "Automaat",
+    slots: ["09:30", "12:00", "15:30"],
+  },
 ];
 
-const formatHour = (hour) => String(hour).padStart(2, "0");
+let geselecteerdeWagenId = null;
 
-const formatDate = (date) =>
-  new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
+const getCarById = (id) => cars.find((car) => car.id === id);
 
-const formatTime = (date) =>
-  new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-
-const setStatus = (text) => {
-  statusText.textContent = text;
+const setBookingStatus = (tekst) => {
+  bookingStatusEl.textContent = tekst;
 };
 
-const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const renderCars = () => {
+  carListEl.innerHTML = "";
 
-const createRandomPromptTime = () => {
-  const startHour = Number(startHourInput.value);
-  const endHour = Number(endHourInput.value);
+  cars.forEach((car) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "car-card";
+    card.setAttribute("role", "listitem");
 
-  if (Number.isNaN(startHour) || Number.isNaN(endHour)) {
-    throw new Error("Start and end hour must be valid numbers.");
-  }
+    if (car.id === geselecteerdeWagenId) {
+      card.classList.add("active");
+    }
 
-  if (startHour < 5 || endHour > 23) {
-    throw new Error("Choose a daytime range between 05 and 23.");
-  }
+    const title = document.createElement("h3");
+    title.textContent = car.naam;
 
-  if (startHour >= endHour) {
-    throw new Error("Start hour must be earlier than end hour.");
-  }
+    const details = document.createElement("p");
+    details.textContent = `${car.type} • ${car.transmissie}`;
 
-  const chosenHour = randomInt(startHour, endHour - 1);
-  const chosenMinute = randomInt(0, 59);
+    const availability = document.createElement("p");
+    availability.className = "availability";
+    availability.textContent = `${car.slots.length} beschikbare slots`;
 
-  const now = new Date();
-  now.setHours(chosenHour, chosenMinute, 0, 0);
+    card.append(title, details, availability);
+    card.addEventListener("click", () => {
+      geselecteerdeWagenId = car.id;
+      renderCars();
+      renderSlots();
+      setBookingStatus(`Wagen geselecteerd: ${car.naam}. Kies nu een tijdslot.`);
+    });
 
-  promptDateEl.textContent = formatDate(now);
-  promptTimeEl.textContent = formatTime(now);
-  promptWindowEl.textContent = `${formatHour(startHour)}:00 – ${formatHour(endHour)}:00`;
-
-  setStatus("Prompt scheduled. User gets one random selfie request today.");
+    carListEl.append(card);
+  });
 };
 
-const renderUserCard = (container, user) => {
-  container.innerHTML = "";
+const boekSlot = (carId, tijdslot) => {
+  const car = getCarById(carId);
 
-  const avatar = document.createElement("div");
-  avatar.className = "avatar";
-  avatar.textContent = user.name.slice(0, 2).toUpperCase();
-
-  const name = document.createElement("h3");
-  name.textContent = user.name;
-
-  const details = document.createElement("p");
-  details.textContent = `${user.city} • ${user.streak}-day streak`;
-
-  const sharing = document.createElement("p");
-  sharing.textContent = "Can see each other’s selfie once both upload.";
-
-  container.append(avatar, name, details, sharing);
-};
-
-const pairRandomUsers = () => {
-  const firstIndex = randomInt(0, users.length - 1);
-  let secondIndex = randomInt(0, users.length - 1);
-
-  while (firstIndex === secondIndex) {
-    secondIndex = randomInt(0, users.length - 1);
+  if (!car) {
+    setBookingStatus("Er ging iets mis: wagen niet gevonden.");
+    return;
   }
 
-  const first = users[firstIndex];
-  const second = users[secondIndex];
+  const slotIndex = car.slots.findIndex((slot) => slot === tijdslot);
 
-  renderUserCard(userAEl, first);
-  renderUserCard(userBEl, second);
-  setStatus(`Paired ${first.name} with ${second.name} for today's selfie swap.`);
+  if (slotIndex === -1) {
+    setBookingStatus("Dit tijdslot is net niet meer beschikbaar.");
+    renderSlots();
+    return;
+  }
+
+  car.slots.splice(slotIndex, 1);
+  setBookingStatus(`✅ Testrit geboekt: ${car.naam} om ${tijdslot}.`);
+
+  if (car.slots.length === 0) {
+    geselecteerdeWagenId = null;
+  }
+
+  renderCars();
+  renderSlots();
 };
 
-generateTimeBtn.addEventListener("click", () => {
-  try {
-    createRandomPromptTime();
-  } catch (error) {
-    setStatus(error.message);
+const renderSlots = () => {
+  slotListEl.innerHTML = "";
+
+  if (!geselecteerdeWagenId) {
+    selectedCarTextEl.textContent = "Selecteer eerst een wagen.";
+    return;
   }
-});
 
-pairUsersBtn.addEventListener("click", pairRandomUsers);
+  const car = getCarById(geselecteerdeWagenId);
 
-createRandomPromptTime();
-pairRandomUsers();
+  if (!car) {
+    selectedCarTextEl.textContent = "Wagen niet gevonden.";
+    return;
+  }
+
+  selectedCarTextEl.textContent = `Tijdsloten voor ${car.naam}:`;
+
+  if (car.slots.length === 0) {
+    selectedCarTextEl.textContent = `${car.naam} heeft geen vrije slots meer.`;
+    return;
+  }
+
+  car.slots.forEach((tijdslot) => {
+    const slotButton = document.createElement("button");
+    slotButton.type = "button";
+    slotButton.className = "slot-card";
+    slotButton.setAttribute("role", "listitem");
+    slotButton.textContent = `${tijdslot} boeken`;
+    slotButton.addEventListener("click", () => boekSlot(car.id, tijdslot));
+
+    slotListEl.append(slotButton);
+  });
+};
+
+renderCars();
+renderSlots();
